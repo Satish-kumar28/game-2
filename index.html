@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <!--<div>Icons made by <a href="https://www.flaticon.com/authors/creaticca-creative-agency" title="Creaticca Creative Agency">Creaticca Creative Agency</a> from <a href="https://www.flaticon.com/"                 title="Flaticon">www.flaticon.com</a> is licensed by <a href="http://creativecommons.org/licenses/by/3.0/"                 title="Creative Commons BY 3.0" target="_blank">CC 3.0 BY</a></div>    
+-->
+        <title>Page Title</title>
+        
+        <style>    * {
+  padding: 0;
+  margin: 0;   
+  overflow: hidden;
+  background: url("https://i.ibb.co/MD65KNh/heaven.jpg") no-repeat center fixed; 
+  -webkit-background-size: cover;
+  -moz-background-size: cover;
+  -o-background-size: cover;
+  background-size: cover;
+}</style>
+
+<script>      alert("Collect more than 500 points to WIN!");
+/*-----------ONLOAD INITIALIZATION-----------*/
+window.onload = function(){
+var canvas = document.querySelector("canvas");
+var c = canvas.getContext("2d");
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+  
+/*-----------MOUSE/TOUCH & CONTROLS-----------*/ 
+//mouse and touch objects
+
+var mouse = {
+  x: window.innerWidth/2,
+  y: window.innerHeight-33
+};
+  
+var touch = {
+  x: window.innerWidth/2,
+  y: window.innerHeight-33
+};
+  
+//event listener for mouse object
+canvas.addEventListener("mousemove", function(event){
+mouse.x = event.clientX;
+//mouse.y = event.clientY;
+});
+//eventListener to mouse object
+canvas.addEventListener("touchmove", function(event){
+  var rect = canvas.getBoundingClientRect();
+  var root = document.documentElement;
+  var touch = event.changedTouches[0];
+  var touchX = parseInt(touch.clientX);
+  var touchY = parseInt(touch.clientY) - rect.top - root.scrollTop;
+  event.preventDefault();
+  mouse.x = touchX;
+  //mouse.y = touchY;
+});
+  
+/*-----------GAME VARIABLES-----------*/  
+//player
+var _players = [];
+var player_width = 64;
+var player_height = 64;
+var playerImg = new Image();
+playerImg.src = "https://i.ibb.co/k9xW3wx/jet.png";
+var health = 100;
+
+//bullet array
+var _bullets = []; //array to hold n bullets
+var bullet_width = 6;
+var bullet_height = 8;
+var bullet_speed = 8;
+
+var _bullets2 = []; //array to hold n bullets [boss]
+
+
+//health array
+var _healthkits = []; //array to hold n health kits
+var healthkitImg = new Image();
+healthkitImg.src = "https://image.ibb.co/iTrjuU/hospital.png";  //"https://image.ibb.co/gFvSEU/first_aid_kit.png";
+var healthkit_width = 32;
+var healthkit_height = 32;
+
+//boss array
+var _boss = []; //array for boss
+var bossImg = new Image(); //boss image
+bossImg.src = "https://i.ibb.co/L8g3tSX/airplane.png"; //boss src image
+var boss_width = 64;
+var boss_height = 64;
+var boss_speed = 2; //speed of boss
+var boss_health = 100;  
+
+//timing variables - this variables are used in main game loop function for handling delayed function calling 
+var  lastTime = 0;
+var lastTime2 = 0;
+var lastTime3 = 0;
+
+/*-----------GAME OBJECTS-----------*/  
+
+//Player object
+function Player(x, y, width, height){
+  this.x = x;
+  this.y = y;
+  this.width = width;
+  this.height = height;
+  
+  this.draw = function(){
+    c.beginPath();
+    c.drawImage(playerImg, mouse.x - player_width/2, mouse.y - player_height/2); //draw player and center cursor
+  };
+  
+  this.update = function(){
+    this.draw();
+  };
+}
+
+//Bullet object
+function Bullet(x, y, width, height, speed){
+  this.x = x;
+  this.y = y;
+  this.width = width;
+  this.height = height;
+  this.speed = speed;
+  
+  this.draw = function(){
+    c.beginPath();
+    c.rect(this.x, this.y, this.width, this.height);
+    c.fillStyle = "#fff";
+    c.fill();
+    c.stroke();
+  };
+  
+  this.update = function(){
+    this.y -= this.speed;
+    this.draw();
+  };
+}
+
+//Health kit object  
+function Healthkit(x, y, width, height, speed){
+  this.x = x;
+  this.y = y;
+  this.width = width;
+  this.height = height;
+  this.speed = speed;
+  
+  this.draw = function(){
+    c.beginPath();
+    c.drawImage(healthkitImg, this.x, this.y);
+  };
+  
+  this.update = function(){
+    this.x += this.speed;
+    this.draw();
+  };
+}
+  
+//Boss object
+function Boss(x, y, width, height, speed){
+  this.x = x;
+  this.y = y;
+  this.width = width;
+  this.height = height;
+  this.speed = speed;
+  
+  this.draw = function(){
+    c.beginPath();
+    c.drawImage(bossImg, this.x, this.y);
+  };
+  
+  this.update = function(){
+    //this.x += this.speed;
+    if(this.x + boss_width/2 + 5 < mouse.x){ // 5 for smooth
+      this.x += this.speed;
+    }
+    else if(this.x + boss_width/2 > mouse.x) {
+      this.x -= this.speed;
+    }
+
+    this.draw();
+  };
+}
+  
+/*-----------_new OBJECT-----------*/  
+//draw Player
+for (var _ = 0; _<1; _++){  //draw player, only once
+  var __player = new Player(mouse.x, mouse.y, player_width, player_height);
+  _players.push(__player);
+}
+
+function drawBoss(){ //draw boss, only once
+  for (var _ = 0; _<1; _++){
+    var x = Math.random()*(canvas.width - boss_width);
+    var y = 0;
+    var width = boss_width;
+    var height = boss_height;
+    var speed = boss_speed;
+    var __boss = new Boss(x, y, width, height, speed);
+    _boss.push(__boss); //push boss to my boss array
+  }
+}drawBoss();
+  
+/*
+******************** NOTE FOR ME *********************
+By moving function drawHealthkits() from ln 198 to animate function (gameloop)
+and by using vars lastTime, lastTime2, lastTime3 I can manage
+timing of each function with currentTime and lastTime comparision.
+currentTime and lastTime in function:
+
+function animate(currentTime){
+  ..
+  if(currentTime > lastTime + 1000){ // + 1000 gives me 1000ms (1s) delay
+    lastTime = currentTime
+  }
+}
+*/  
+
+/*  DRAW HEALTHKITS is moved to animate function (gameloop) to avoid setInterval
+//draw health kits
+function drawHealthkits(){
+  for (var _ = 0; _<1; _++){ //healthkits  
+    var x = -healthkit_width; 
+    var y = canvas.height/2;
+    var width = healthkit_width;
+    var height = healthkit_height;
+    var speed = Math.random()*2.6;
+    var __healthkit = new Healthkit(x, y, width, height, speed);
+    _healthkits.push(__healthkit); //push enemy to my array of enemies
+  }
+}setInterval(drawHealthkits, 9000); //draw healthkits every 9000ms (9s)
+*/
+
+//draw bullet
+//var __bullet = new Bullet(mouse.x-bullet_width/2, mouse.y-player_height, bullet_width, bullet_height, bullet_speed);  
+
+
+/*Older fire function - called with setInterval - now moved to animate func (game loop)
+//fire bullet function
+function fire(){ //fire bullet from mouse.x on x axis, y axis, width, height, speed
+  for (var _ = 0; _<1; _++){
+    var x = mouse.x-bullet_width/2;
+    var y = mouse.y-player_height;
+    var speed = bullet_speed;
+    var __bullet = new Bullet(x, y, bullet_width, bullet_height, bullet_speed);
+    _bullets.push(__bullet); //push bullet to my array of bullets
+  }
+}//setInterval(fire, 1234);
+*/  
+  
+  
+//event listener for fire function - now disabled
+canvas.addEventListener("click", function(){
+  //fire();
+});
+  
+/*-----------COLLISION DETECTION-----------*/
+function collision(a,b){
+  return a.x < b.x + b.width &&
+         a.x + a.width > b.x &&
+         a.y < b.y + b.height &&
+         a.y + a.height > b.y;
+}
+function collision2(a,b){
+  return mouse.x - a.width/2 < b.x + b.width &&
+         mouse.x + a.width/2 > b.x &&
+         mouse.y < b.y + b.height &&
+         mouse.y + a.height > b.y;
+}
+/*-----------BOSS_HEALTH-----------*/
+c.fillStyle = "white";
+c.font = "1em Arial";
+
+/*-----------DIRTY ERROR HANDLING-----------*/
+function stoperror() {
+  return true;
+}  
+window.onerror = stoperror;
+  
+/*-----------GAME LOOP-----------*/
+function animate(currentTime){ //currentTime for handling timing (firing, drawing healthkits)
+  requestAnimationFrame(animate); //animate
+  c.beginPath(); //begin
+  c.clearRect(0, 0, window.innerWidth, window.innerHeight); //clear canvas
+  c.fillText(health, mouse.x + 32, mouse.y); //health
+    for(var i=0; i<_boss.length; i++){
+      c.fillText(boss_health, _boss[i].x + boss_width , 20); //boss_health
+    }
+    
+  
+/*-----------__player, __bullet, __enemy update, __healthkit update-----------*/
+  //update _player
+  for (var i=0; i < _players.length; i++){
+    _players[i].update();
+    //console.log(_players[i].hp); //deleted this.hp for clarity
+  }
+  
+  
+  //update bullets from bullets array
+  for (var i=0; i < _bullets.length; i++){
+    _bullets[i].update();
+    if (_bullets[i].y < 0 || _bullets[i].y > canvas.height){
+      _bullets.splice(i, 1);
+    }
+  }
+  
+  //update bullets2 from bullets array
+  for (var i=0; i < _bullets2.length; i++){
+    _bullets2[i].update();
+    if (_bullets2[i].y < 0 || _bullets2[i].y > canvas.height){
+      _bullets2.splice(i, 1);
+    }
+  }
+  
+  //draw healthkits
+  for(var h=0; h < _healthkits.length; h++){
+    _healthkits[h].update();
+  }
+ 
+  
+/**************** FIRE BULLETS FUNCTION ****************/
+function fire(){ //fire bullet from mouse.x on x axis, y axis, width, height, speed
+  for (var _ = 0; _<1; _++){
+    if(currentTime >= lastTime2 + 1000){ //fire every 1000ms (1s)
+      lastTime2 = currentTime;
+      var x = mouse.x-bullet_width/2;
+      var y = mouse.y-player_height;
+      var speed = bullet_speed;
+      var __bullet = new Bullet(x, y, bullet_width, bullet_height, bullet_speed);
+      _bullets.push(__bullet); //push bullet to my array of bullets
+    }
+  }
+}fire(); 
+  
+/**************** BOSS FIRE BULLETS FUNCTION ****************/  
+//with currentTime and lastTime comparison we can shoot every .5 second (500ms)
+  for(var i=0; i<_boss.length; i++){
+    _boss[i].update();
+      if(currentTime >= lastTime + 500){
+        lastTime = currentTime;
+          
+        for (var _ = 0; _<1; _++){
+          var x = _boss[i].x+boss_width/2;
+          var y = boss_height;
+          var speed = 10;
+          var __bullet2 = new Bullet(x, y, bullet_width, bullet_height, -speed);
+          _bullets2.push(__bullet2); //push bullet to my array of bullets
+        }
+      }
+  }
+
+/**************** DRAW HEALTHKITS FUNCTION ****************/   
+function drawHealthkits(){ //draw health kits every 9000ms (9s)
+  for(var _ = 0; _<1; _++){ //draw healthkit
+    if(currentTime >= lastTime3 + 9000){ //draw it every 9s with currentTime and lastTime comparision
+      lastTime3 = currentTime;
+      var x = -healthkit_width; //starting x axis position 
+      var y = canvas.height/2; //y axis postion - centered
+      var width = healthkit_width;
+      var height = healthkit_height;
+      var speed = Math.random()*3.5; //healthkit's speed
+      var __healthkit = new Healthkit(x, y, width, height, speed);
+      _healthkits.push(__healthkit); //push healthkits to array
+    }
+  }
+}drawHealthkits();
+     
+     
+/*
+****************** COLLISIONS, BOOM! ******************
+
+
+                        _    ,-,    _
+                 ,--, /: :\/': :`\/: :\
+                |`;  ' `,'   `.;    `: |
+                |    |     |  '  |     |.
+                | :  |     |BOOM!|     ||
+                | :. |  :  |  :  |  :  | \
+                 \__/: :.. : :.. | :.. |  )
+                      `---',\___/,\___/ /'
+                           `==._ .. . /'
+                                `-::-'
+
+*/
+
+/***********BOSS AND BULLETS COLLISIONS***********/
+  //1. loop over both boss and bullets to detect collisions
+  for(var jl = _boss.length-1; jl >= 0; jl--){
+    for(var ll = _bullets.length-1; ll >= 0; ll--){
+      if(collision(_boss[jl], _bullets[ll])){
+        _bullets.splice(ll, 1);
+        //boss.splice(jl, 1);
+        boss_health -= 10;
+        if(boss_health == 0){
+          alert("You WON this round! You get extra hp!");
+          health += 100;
+          boss_health = 100;
+        }
+        else if(health >= 500){
+          alert("You WON! You collected more than 500 points!");
+          health = 100;
+          boss_health = 100;
+        }
+      }
+    }
+  }  
+
+/***********PLAYER AND BULLETS COLLISIONS***********/  
+//2. loop over both player and bullets to detect collisions
+  for(var q2 = _players.length-1; q2 >= 0; q2--){
+    for(var q3 = _bullets2.length-1; q3 >= 0; q3--){
+      if(collision2(_players[q2], _bullets2[q3])){
+        _bullets2.splice(q3, 1);
+        health -= 10;
+        if(health == 0){
+          alert("You LOST this round! Boss now gets extra hp!");
+          health = 100;
+          boss_health += 100;
+        }
+
+        else if(boss_health >= 500){
+          alert("You LOST! Enemy collected more than 500 points!");
+          health = 100;
+          boss_health = 100;
+        }       
+      }
+    }
+  }
+
+/***********HEALTHKITS AND BULLETS COLLISIONS***********/
+//loop over both healthkits and bullets to detect collisions
+  for(var hh = _healthkits.length-1; hh >= 0; hh--){
+    for(var hhh = _bullets.length-1; hhh >= 0; hhh--){
+      if(collision(_healthkits[hh], _bullets[hhh])){
+        _healthkits.splice(hh, 1);
+        _bullets.splice(hhh, 1);
+        health += 100;
+      }
+    }
+  } 
+ 
+/***********HEALTHKITS AND BULLETS [FROM BOSS] COLLISIONS***********/  
+//loop over both healthkits and bullets to detect collisions [boss bullets]
+  for(var hh = _healthkits.length-1; hh >= 0; hh--){
+    for(var hhh = _bullets2.length-1; hhh >= 0; hhh--){
+      if(collision(_healthkits[hh], _bullets2[hhh])){
+        _healthkits.splice(hh, 1);
+        _bullets2.splice(hhh, 1);
+        boss_health += 100;
+      }
+    }
+  }
+  
+  
+
+  
+} //animate func
+animate();
+
+}; //end of onload func
+  </script>
+
+
+
+
+
+    </head>
+    <body>
+        <canvas></canvas>
+    </body>
+</html>
